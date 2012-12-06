@@ -1,5 +1,5 @@
 <?php
-define('_DEBUG_LOG',false);//true);//false);//true);
+define('_DEBUG_LOG',false);//false);//true);
 define('_DEBUG_ELAPSED',true);//false);//true);
 define('_DEBUG_PROXY_HOST',false);//'127.0.0.1');
 define('_DEBUG_PROXY_PORT',8888);
@@ -168,6 +168,40 @@ function ws_http_get($url,$query=false,$charset=false,$cookies=false,$headers=fa
     return _ws_http("get",$url,$query,$charset,$cookies,$headers);
 }
 
+////////////////////////////////////
+/// utility
+////////////////////////////////////
+
+function ws_http_build_url($urlinfo)
+{
+    // urlinfo keys: scheme host port user pass path query fragment
+    return $urlinfo['scheme'].'://'.
+           $urlinfo['host'].
+           (isset($urlinfo['port'])?':'.$urlinfo['port']:'').
+           $urlinfo['path'].
+           (isset($urlinfo['query'])?'?'.$urlinfo['query']:'').
+           (isset($urlinfo['fragment'])?'#'.$urlinfo['fragment']:'');
+}
+
+function ws_http_join_url($url,$path)
+{
+    if(preg_match('/^http(s)?:/',$path)){
+        return $path;
+    }
+    $urlinfo=parse_url($url);
+    unset($urlinfo['path']);
+    unset($urlinfo['query']);
+    unset($urlinfo['fragment']);
+    $urlinfo['path']=$path;
+    return ws_http_build_url($urlinfo);
+}
+
+function ws_http_merge_cookies($cookie1,$cookie2)
+{
+    if(!$cookie1)return $cookie2;
+    return $cookie2?array_merge($cookie1,$cookie2):$cookie1;
+}
+
 ////////////////////////////////
 /// browser
 ////////////////////////////////
@@ -247,12 +281,13 @@ function ws_browser_load_cookies(&$browser,$cookies)
     $browser["cookies"]=$cookies;
 }
 
-function ws_browser_get(&$browser,$url,$query=false,$headers=false)
+function ws_browser_get(&$browser,$url,$query=false,$headers=false,$extracookies=false)
 {
     $host=parse_url($url,PHP_URL_HOST);
     $charset=$browser["charset"];
     $cookies=false;
     if(isset($browser["cookies"],$browser["cookies"][$host]))$cookies=$browser["cookies"][$host];
+    if($extracookies)$cookies=ws_http_merge_cookies($cookies,$extracookies);
     $tmpheaders=array_merge($browser["headers"],$headers?$headers:array());
     list($status,$response,$contents,$setcookies)=
         _ws_http("GET",$url,$query,$charset,$cookies,$tmpheaders);
@@ -260,18 +295,19 @@ function ws_browser_get(&$browser,$url,$query=false,$headers=false)
     $browser["status"]=$status[1];
     $browser["response"]=$response;
     $browser["setcookies"]=$setcookies;
-    $cookies=$cookies?array_merge($cookies,$setcookies):$setcookies;
+    $cookies=ws_http_merge_cookies($cookies,$setcookies);
     $browser["cookies"][$host]=$cookies;
     $_SESSION['ws_browser_cookies']=$browser["cookies"];
     return $contents;
 }
 
-function ws_browser_post(&$browser,$url,$query=false,$headers=false)
+function ws_browser_post(&$browser,$url,$query=false,$headers=false,$extracookies=false)
 {
     $host=parse_url($url,PHP_URL_HOST);
     $charset=$browser["charset"];
     $cookies=false;
     if(isset($browser["cookies"],$browser["cookies"][$host]))$cookies=$browser["cookies"][$host];
+    if($extracookies)$cookies=ws_http_merge_cookies($cookies,$extracookies);
     $tmpheaders=array_merge($browser["headers"],$headers?$headers:array());
     list($status,$response,$contents,$setcookies)=
         _ws_http("POST",$url,$query,$charset,$cookies,$tmpheaders);
@@ -279,36 +315,9 @@ function ws_browser_post(&$browser,$url,$query=false,$headers=false)
     $browser["status"]=$status[1];
     $browser["response"]=$response;
     $browser["setcookies"]=$setcookies;
-    $cookies=$cookies?array_merge($cookies,$setcookies):$setcookies;
+    $cookies=ws_http_merge_cookies($cookies,$setcookies);
     $browser["cookies"][$host]=$cookies;
     $_SESSION['ws_browser_cookies']=$browser["cookies"];
     return $contents;
 }
 
-////////////////////////////////////
-/// utility
-////////////////////////////////////
-
-function ws_http_build_url($urlinfo)
-{
-    // urlinfo keys: scheme host port user pass path query fragment
-    return $urlinfo['scheme'].'://'.
-           $urlinfo['host'].
-           (isset($urlinfo['port'])?':'.$urlinfo['port']:'').
-           $urlinfo['path'].
-           (isset($urlinfo['query'])?'?'.$urlinfo['query']:'').
-           (isset($urlinfo['fragment'])?'#'.$urlinfo['fragment']:'');
-}
-
-function ws_http_join_url($url,$path)
-{
-    if(preg_match('/^http(s)?:/',$path)){
-        return $path;
-    }
-    $urlinfo=parse_url($url);
-    unset($urlinfo['path']);
-    unset($urlinfo['query']);
-    unset($urlinfo['fragment']);
-    $urlinfo['path']=$path;
-    return ws_http_build_url($urlinfo);
-}
