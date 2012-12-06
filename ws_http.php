@@ -321,3 +321,32 @@ function ws_browser_post(&$browser,$url,$query=false,$headers=false,$extracookie
     return $contents;
 }
 
+if(PHP_SAPI=='cli'){
+  ob_clean();
+
+  function onexit(){
+    if(isset($_SESSION)&&count($_SESSION)>0)file_put_contents("session.json",json_encode($_SESSION));
+  }
+  register_shutdown_function('onexit');
+
+  if(file_exists("session.json")){
+    @session_start();
+    $_SESSION=json_decode(file_get_contents("session.json"),true);
+  }
+
+  if(preg_match("/^http(s)?:/",$argv[1])){
+    $drop=array_shift($argv);
+    $url=array_shift($argv);
+    $contents=ws_browser_get(ws_browser_init(),$url);
+    error_log($contents);
+  }else{
+    $drop=array_shift($argv);
+    $script=array_shift($argv);
+    for($i=0;$i<count($argv);$i++){
+      list($k,$v)=explode("=",$argv[$i],2);
+      $_REQUEST[$k]=$v;
+    }
+    require_once "{$script}";
+  }
+
+}
