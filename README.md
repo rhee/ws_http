@@ -11,3 +11,4 @@ ws_http
   + Usage: php ws_http.php https://raw.github.com/rhee/ws_http/master/README.md
 * can be sued as php cli script to test other php script require_once'ing ws_http.php
   + Usage: php ws_http.php other_php_script.php key1=value1 key2=value2 ...
+* in cli mode, received set-cookie's are stored in session.json file in current directory, and then re-read back when next time you call ws_http.php cli at current directory.
