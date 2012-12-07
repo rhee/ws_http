@@ -327,7 +327,6 @@ function ws_browser_post(&$browser,$url,$query=false,$headers=false,$extracookie
 }
 
 if(PHP_SAPI=='cli'){
-  ob_clean();
 
   function onexit(){
     if(isset($_SESSION)&&count($_SESSION)>0)file_put_contents("session.json",json_encode($_SESSION));
@@ -343,7 +342,7 @@ if(PHP_SAPI=='cli'){
     $drop=array_shift($argv);
     $url=array_shift($argv);
     $contents=ws_browser_get(ws_browser_init(),$url);
-    error_log($contents);
+    echo $contents;
   }else{
     $drop=array_shift($argv);
     $script=array_shift($argv);
@@ -351,6 +350,7 @@ if(PHP_SAPI=='cli'){
       list($k,$v)=explode("=",$argv[$i],2);
       $_REQUEST[$k]=$v;
     }
+    @ob_clean();
     require_once "{$script}";
   }
 
