@@ -1,8 +1,6 @@
 <?php
 define('_DEBUG_LOG',false);//false);//true);
 define('_DEBUG_ELAPSED',true);//false);//true);
-define('_DEBUG_PROXY_HOST',false);//'127.0.0.1');
-define('_DEBUG_PROXY_PORT',8888);
 define('_FIXME_SSL_WORKAROUND',1);
 define('_FAKE_USER_AGENT','User-Agent: Mozilla/5.0 (Windows NT 5.1) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11');
 
@@ -39,33 +37,13 @@ function _ws_http($method,$url,$query,$charset,$cookies,$headers)
     //추가 헤더
     $h=array_merge($h,$headers);
 
-    if($cookies){
-	$cookiearray=array();
-	foreach($cookies as $k => $v)array_push($cookiearray,_cookieencode($k)."="._cookieencode($v));
-	$cookiestring=implode("; ",$cookiearray);
-	if(strlen($cookiestring)>0)curl_setopt($ch,CURLOPT_COOKIE,$cookiestring);
-    }
-
     curl_setopt($ch,CURLINFO_HEADER_OUT,1);
     curl_setopt($ch,CURLOPT_RETURNTRANSFER,1);
     curl_setopt($ch,CURLOPT_HEADER,1);
-    curl_setopt($ch,CURLOPT_HTTPHEADER,$h);
     curl_setopt($ch,CURLOPT_ENCODING,"");
     //curl_setopt($ch,CURLOPT_COOKIESESSION,1);
     curl_setopt($ch,CURLOPT_FOLLOWLOCATION,1);
     curl_setopt($ch,CURLOPT_MAXREDIRS,10);
-
-    $querystring=http_build_query($query);
-
-    if(strcasecmp("post",$method)==0){
-	curl_setopt($ch,CURLOPT_POST,1);
-	//curl_setopt($ch,CURLOPT_POSTFIELDS,$query);
-	curl_setopt($ch,CURLOPT_POSTFIELDS,$querystring);
-    }else{
-	if(strlen($querystring)>0){
-	    $url.="?".$querystring;
-	}
-    }
 
     if(_FIXME_SSL_WORKAROUND){
         curl_setopt($ch,CURLOPT_VERBOSE,true);
@@ -75,13 +53,41 @@ function _ws_http($method,$url,$query,$charset,$cookies,$headers)
 	curl_setopt($ch,CURLOPT_SSL_VERIFYPEER,0);
     }
 
-    if(_DEBUG_PROXY_HOST){
-	error_log("NOTICE: proxy via "._DEBUG_PROXY_HOST.":"._DEBUG_PROXY_PORT."");
-	curl_setopt($ch,CURLOPT_PROXY,_DEBUG_PROXY_HOST);
-	curl_setopt($ch,CURLOPT_PROXYPORT,_DEBUG_PROXY_PORT);
+    //NOTE: deprecated: use environment variable http_proxy e.g.:
+    //NOTE: env http_proxy=127.0.0.1:8888 php ws_http.php <args>
+    //if(_DEBUG_PROXY_HOST){
+    //	error_log("\n\nNOTICE: proxy via "._DEBUG_PROXY_HOST.":"._DEBUG_PROXY_PORT."");
+    //	curl_setopt($ch,CURLOPT_PROXY,_DEBUG_PROXY_HOST);
+    //	curl_setopt($ch,CURLOPT_PROXYPORT,_DEBUG_PROXY_PORT);
+    //}
+
+    if($cookies){
+	$cookiearray=array();
+	foreach($cookies as $k => $v)array_push($cookiearray,_cookieencode($k)."="._cookieencode($v));
+	$cookiestring=implode("; ",$cookiearray);
+	if(strlen($cookiestring)>0)curl_setopt($ch,CURLOPT_COOKIE,$cookiestring);
+    }
+
+    if(strcasecmp("POST",$method)==0){
+        if(is_array($query)){
+	    $querystring=http_build_query($query);
+        }else{
+	    $querystring=$query;
+	    //override content-type
+            $h[]="Content-Type: text/plain";
+        }
+	curl_setopt($ch,CURLOPT_POST,1);
+	//curl_setopt($ch,CURLOPT_POSTFIELDS,$query);// multipart/form-data
+	curl_setopt($ch,CURLOPT_POSTFIELDS,$querystring);//application/x-www-form-urlencoded
+    }else{
+	if(count($query)>0){
+            $querystring=http_build_query($query);
+	    $url.="?".$querystring;
+	}
     }
 
     curl_setopt($ch,CURLOPT_URL,$url);
+    curl_setopt($ch,CURLOPT_HTTPHEADER,$h);
 
     $r=curl_exec($ch);
     if(!$r) {
@@ -100,8 +106,7 @@ function _ws_http($method,$url,$query,$charset,$cookies,$headers)
 	}
 
         if(0==strcasecmp("POST",$method)){
-	    error_log("");
-	    error_log("===http form data===: ".$querystring);
+	    error_log("\n===http form data===:\n".$querystring);
 	}
     }
 
@@ -159,13 +164,13 @@ function _ws_http($method,$url,$query,$charset,$cookies,$headers)
 function ws_http_post($url,$query=false,$charset=false,$cookies=false,$headers=false)
 {
     error_log("OBSOLETE: ws_http_post deprecated, use ws_browser_post()");
-    return _ws_http("post",$url,$query,$charset,$cookies,$headers);
+    return _ws_http("POST",$url,$query,$charset,$cookies,$headers);
 }
 
 function ws_http_get($url,$query=false,$charset=false,$cookies=false,$headers=false)
 {
     error_log("OBSOLETE: ws_http_get deprecated, use ws_browser_get()");
-    return _ws_http("get",$url,$query,$charset,$cookies,$headers);
+    return _ws_http("GET",$url,$query,$charset,$cookies,$headers);
 }
 
 ////////////////////////////////////
