@@ -47,7 +47,7 @@ function _ws_http($method,$url,$query,$charset,$cookies,$headers)
 
     if(_FIXME_SSL_WORKAROUND){
         curl_setopt($ch,CURLOPT_VERBOSE,true);
-        curl_setopt($ch,CURLOPT_CERTINFO,true);
+        //curl_setopt($ch,CURLOPT_CERTINFO,true);
         //curl_setopt($ch,CURLOPT_STDERR,"curl_ssl_info.log");
 	curl_setopt($ch,CURLOPT_SSL_VERIFYHOST,0); //level 1
 	curl_setopt($ch,CURLOPT_SSL_VERIFYPEER,0);
@@ -326,7 +326,8 @@ function ws_browser_post(&$browser,$url,$query=false,$headers=false,$extracookie
     return $contents;
 }
 
-if(PHP_SAPI=='cli'){
+if(PHP_SAPI=='cli' && !count(debug_backtrace()))
+{
 
   function onexit(){
     if(isset($_SESSION)&&count($_SESSION)>0)file_put_contents("session.json",json_encode($_SESSION));
@@ -341,17 +342,20 @@ if(PHP_SAPI=='cli'){
   if(preg_match("/^http(s)?:/",$argv[1])){
     $drop=array_shift($argv);
     $url=array_shift($argv);
-    $contents=ws_browser_get(ws_browser_init(),$url);
+    for($i=0;$i<count($argv);$i++){
+      list($k,$v)=explode("=",$argv[$i],2);
+      $request[$k]=$v;
+    }
+    $contents=ws_browser_get(ws_browser_init(),$url,$request);
     echo $contents;
-  }else{
+  }else if(file_exists($argv[1])){
     $drop=array_shift($argv);
     $script=array_shift($argv);
     for($i=0;$i<count($argv);$i++){
       list($k,$v)=explode("=",$argv[$i],2);
       $_REQUEST[$k]=$v;
     }
-    @ob_clean();
-    require_once "{$script}";
+    require_once $script;
   }
 
 }
