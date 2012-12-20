@@ -1,6 +1,6 @@
 <?php
 define('_DEBUG_LOG',false);//false);//true);
-define('_DEBUG_ELAPSED',true);//false);//true);
+define('_DEBUG_ELAPSED',false);//false);//true);
 define('_FIXME_SSL_WORKAROUND',1);
 define('_FAKE_USER_AGENT','User-Agent: Mozilla/5.0 (Windows NT 5.1) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11');
 
@@ -143,18 +143,20 @@ function _ws_http($method,$url,$query,$charset,$cookies,$headers)
 	}
     }
 
+    $status_triple=explode(" ",$http_status,3);
+    $status_code=curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $status_triple[1]=$status_code;
+
     curl_close($ch);
 
     if(_DEBUG_ELAPSED){
-        $status_triple=explode(" ",$http_status,3);
-	$status_code=$status_triple[1];
 	$elapsed=microtime(true)-$start_time;
         error_log("");
 	error_log(sprintf("===http time===: %01.2f %s %s %s",$elapsed,$status_code,strtoupper($method),$url));
     }
 
     return array(
-	    explode(" ",$http_status,3),
+	    $status_triple,
 	    $newheaders,
 	    $charset=="utf-8"?$contents:iconv($charset,"utf-8",$contents),
 	    $newcookies);
@@ -296,6 +298,7 @@ function ws_browser_get(&$browser,$url,$query=false,$headers=false,$extracookies
     $tmpheaders=array_merge($browser["headers"],$headers?$headers:array());
     list($status,$response,$contents,$setcookies)=
         _ws_http("GET",$url,$query,$charset,$cookies,$tmpheaders);
+    if("200"!=$status[1])error_log("ws_browser_get: ".implode(" ",$status));
     $browser["host"]=$host;
     $browser["status"]=$status[1];
     $browser["response"]=$response;
@@ -316,6 +319,7 @@ function ws_browser_post(&$browser,$url,$query=false,$headers=false,$extracookie
     $tmpheaders=array_merge($browser["headers"],$headers?$headers:array());
     list($status,$response,$contents,$setcookies)=
         _ws_http("POST",$url,$query,$charset,$cookies,$tmpheaders);
+    if("200"!=$status[1])error_log("ws_browser_post: ".implode(" ",$status));
     $browser["host"]=$host;
     $browser["status"]=$status[1];
     $browser["response"]=$response;
@@ -328,17 +332,7 @@ function ws_browser_post(&$browser,$url,$query=false,$headers=false,$extracookie
 
 if(PHP_SAPI=='cli' && !count(debug_backtrace()))
 {
-
-  function onexit(){
-    if(isset($_SESSION)&&count($_SESSION)>0)file_put_contents("session.json",json_encode($_SESSION));
-  }
-  register_shutdown_function('onexit');
-
-  if(file_exists("session.json")){
-    @session_start();
-    $_SESSION=json_decode(file_get_contents("session.json"),true);
-  }
-
+  require_once "fakesession.php";
   if(preg_match("/^http(s)?:/",$argv[1])){
     $drop=array_shift($argv);
     $url=array_shift($argv);
@@ -348,14 +342,5 @@ if(PHP_SAPI=='cli' && !count(debug_backtrace()))
     }
     $contents=ws_browser_get(ws_browser_init(),$url,$request);
     echo $contents;
-  }else if(file_exists($argv[1])){
-    $drop=array_shift($argv);
-    $script=array_shift($argv);
-    for($i=0;$i<count($argv);$i++){
-      list($k,$v)=explode("=",$argv[$i],2);
-      $_REQUEST[$k]=$v;
-    }
-    require_once $script;
   }
-
 }
