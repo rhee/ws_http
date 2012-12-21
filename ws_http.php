@@ -336,6 +336,7 @@ if(PHP_SAPI=='cli' && !count(debug_backtrace()))
   if(preg_match("/^http(s)?:/",$argv[1])){
     $drop=array_shift($argv);
     $url=array_shift($argv);
+    $request=array();
     for($i=0;$i<count($argv);$i++){
       list($k,$v)=explode("=",$argv[$i],2);
       $request[$k]=$v;
