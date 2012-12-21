@@ -1,6 +1,6 @@
 <?php
-define('_DEBUG_LOG',false);//false);//true);
-define('_DEBUG_ELAPSED',false);//false);//true);
+define('_DEBUG_LOG',"1"==getenv("http_debug"));
+define('_DEBUG_ELAPSED',"1"==getenv("http_debug_elapsed"));
 define('_FIXME_SSL_WORKAROUND',1);
 define('_FAKE_USER_AGENT','User-Agent: Mozilla/5.0 (Windows NT 5.1) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11');
 
