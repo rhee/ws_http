@@ -30,7 +30,7 @@ import android.util.Log;
 
 public class SimpleHttp extends AsyncTask<String,Void,Throwable> {
 
-    final static String LOG_TAG="CoupleObserver";//"HttpTest";
+    final static String LOG_TAG="SimpleHttp";//"HttpTest";
 
     static {
 	//allow self-signed cert ( in fact, disables host name check )
@@ -132,7 +132,6 @@ public class SimpleHttp extends AsyncTask<String,Void,Throwable> {
                     con.setChunkedStreamingMode(0);
                     BufferedWriter out=new BufferedWriter(new OutputStreamWriter(con.getOutputStream()));
                     out.write(http_params_raw);
-                    //out.newLine();
                     out.close();
                 }
 
@@ -154,10 +153,10 @@ public class SimpleHttp extends AsyncTask<String,Void,Throwable> {
 	    }
 
 	}catch(MalformedURLException e){
-	    Log.e(LOG_TAG,"HttpUrlConnection error",e);
+	    Log.e(LOG_TAG,"*** HttpUrlConnection error",e);
 	    return e;
 	}catch(IOException e){
-	    Log.e(LOG_TAG,"HttpUrlConnection error",e);
+	    Log.e(LOG_TAG,"*** HttpUrlConnection error",e);
 	    return e;
 	}
 	return null;
@@ -173,25 +172,6 @@ public class SimpleHttp extends AsyncTask<String,Void,Throwable> {
 	    http_callback.run();
 	}
     }
-
-//    public SimpleHttp execute(final SimpleHttpCallback callback) /*throws IOException*/ {
-//
-//	this.http_error=null;
-//	this.http_status=0;	//(re-)initalize
-//	this.http_server_time=0;
-//	this.http_response=null;
-//	
-//	this.http_callback=new SimpleHttpCallbackWrapper(callback);
-//
-//	this.http_callback.setTask(this);
-//
-//	Log.v(LOG_TAG,"Http.execute: url=\""+http_url+"\", params=\""+http_params_raw+"\"");
-//
-//	super.execute();
-//	
-//	return this;
-//
-//    }
 
     public SimpleHttp get(final SimpleHttpCallback callback) /*throws IOException*/ {
 
